@@ -1,7 +1,7 @@
 // ── Config ──
 const BIN_ID = '6a2841ebda38895dfea17c6c';
-const API_KEY = '$2a$10$z4dgx.W4qAtoqEaGYdTb9Oi/02Xrt.aHX07u3n7gHrOfifHh0avci';
-const BASE = 'https://api.jsonbin.io/v3/bins';
+const API_KEY = '$2a$10$L1O6QwFVpC8owPRMFLOPS.waWfKz7/6GN4Ax1HNg/7vqW2YeP2MBO';
+const BASE = 'https://api.jsonbin.io/v3/b';
 const GOAL = 10;
 
 // ── State ──
@@ -11,7 +11,9 @@ let rivalName = null;
 let saveTimer = null;
 
 // ── Utils ──
-const todayKey = () => new Date().toISOString().slice(0, 10);
+const dateKey = d => d.toLocaleDateString('sv-SE');
+const todayKey = () => dateKey(new Date());
+
 const initials = name => name.slice(0, 2).toUpperCase();
 
 function showToast(msg) {
@@ -54,7 +56,7 @@ async function handleLogin() {
   if (!name) return;
   const btn = document.getElementById('login-btn');
   btn.disabled = true;
-  btn.textContent = 'Загрузка...';
+  btn.textContent = 'Loading...';
 
   await loadDB();
 
@@ -76,7 +78,7 @@ function logout() {
   document.getElementById('name-input').value = '';
   const btn = document.getElementById('login-btn');
   btn.disabled = false;
-  btn.textContent = 'Войти / Зарегистрироваться';
+  btn.textContent = 'Sign in / Register';
 }
 
 // ── Main ──
@@ -117,15 +119,15 @@ function render() {
   document.getElementById('stat-my-streak').textContent = streak + ' 🔥';
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-today').textContent = done ? '✅' : '⏳';
-  document.getElementById('stat-today-sub').textContent = done ? 'Молодец!' : 'цель открыта';
+  document.getElementById('stat-today-sub').textContent = done ? 'Well done!' : 'goal pending';
 
   // My card
-  document.getElementById('my-streak-label').textContent = streak + ' 🔥 серия · ' + total + ' стр всего';
+  document.getElementById('my-streak-label').textContent = streak + ' 🔥 streak · ' + total + ' pages total';
   document.getElementById('my-pages').textContent = todayPages;
   document.getElementById('my-prog').style.width = Math.min(100, todayPages / GOAL * 100) + '%';
   const doneBtn = document.getElementById('done-btn');
   doneBtn.classList.toggle('active', done);
-  doneBtn.textContent = done ? '✓ Готово!' : '✓ Отметить';
+  doneBtn.textContent = done ? '✓ Done!' : '✓ Mark done';
 
   renderBook();
   renderRival();
@@ -137,7 +139,7 @@ function computeStreak(history) {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   while (true) {
-    const k = d.toISOString().slice(0, 10);
+    const k = dateKey(d);
     if ((history[k] || 0) >= GOAL) {
       streak++;
       d.setDate(d.getDate() - 1);
@@ -149,13 +151,13 @@ function computeStreak(history) {
 function renderBook() {
   const u = db.users[currentUser];
   const b = u.book || {};
-  document.getElementById('book-title').textContent = b.title || 'Книга не указана';
+  document.getElementById('book-title').textContent = b.title || 'No book set';
   if (b.title && b.total) {
     const myTotal = Object.values(u.history).reduce((s, v) => s + v, 0);
     const pct = Math.min(100, Math.round(myTotal / b.total * 100));
-    document.getElementById('book-meta').textContent = `${b.total} страниц · ${pct}% прочитано`;
+    document.getElementById('book-meta').textContent = `${b.total} pages · ${pct}% read`;
   } else if (b.title) {
-    document.getElementById('book-meta').textContent = 'Страницы не указаны';
+    document.getElementById('book-meta').textContent = 'Page count not set';
   } else {
     document.getElementById('book-meta').textContent = '—';
   }
@@ -168,7 +170,7 @@ function renderRival() {
   if (!rivalName || !db.users[rivalName]) {
     avatarEl.textContent = '?';
     avatarEl.className = 'rival-avatar';
-    infoEl.innerHTML = '<div class="no-rival-placeholder">Соперник не выбран</div>';
+    infoEl.innerHTML = '<div class="no-rival-placeholder">No rival selected</div>';
     return;
   }
 
@@ -185,10 +187,10 @@ function renderRival() {
 
   infoEl.innerHTML = `
     <div class="rival-name">${rivalName} ${done ? '✅' : ''}</div>
-    <div class="rival-meta">${streak} 🔥 серия · ${total} стр всего</div>
+    <div class="rival-meta">${streak} 🔥 streak · ${total} pages total</div>
     <div class="rival-progress">
       <div class="prog-label">
-        <span>Сегодня</span>
+        <span>Today</span>
         <span>${todayPages} / ${GOAL}</span>
       </div>
       <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
@@ -203,22 +205,22 @@ function renderHeatmap() {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const cells = [];
   const startDate = new Date(today);
-  startDate.setDate(startDate.getDate() - 27);
+  startDate.setDate(startDate.getDate() - 28);
   const dow = startDate.getDay();
   const offset = dow === 0 ? 6 : dow - 1;
   for (let i = 0; i < offset; i++) cells.push('<div class="hm-cell empty"></div>');
-  for (let i = 0; i < 28; i++) {
+  for (let i = 0; i <= 28; i++) {
     const d = new Date(startDate);
     d.setDate(d.getDate() + i);
-    const k = d.toISOString().slice(0, 10);
+    const k = dateKey(d);
     const isToday = k === todayKey();
     const isFuture = d > today;
     let cls = 'hm-cell';
     if (!isFuture) {
       const myOk = (u.history[k] || 0) >= GOAL;
       const rvOk = rData ? (rData.history[k] || 0) >= GOAL : false;
-      if (myOk && (rvOk || !rData)) cls += ' both';
-      else if (myOk || rvOk) cls += ' one';
+      if (myOk) cls += ' both';
+      else if (rvOk) cls += ' one';
       else if (k < todayKey()) cls += ' missed';
     }
     if (isToday) cls += ' today';
@@ -238,7 +240,7 @@ function addPages(delta) {
 }
 
 function addCustomPages() {
-  const n = parseInt(prompt('Сколько страниц прочитал?'), 10);
+  const n = parseInt(prompt('How many pages did you read?'), 10);
   if (!isNaN(n) && n > 0) {
     const u = db.users[currentUser];
     const k = todayKey();
@@ -246,7 +248,7 @@ function addCustomPages() {
     u.history[k] += n;
     saveDB();
     render();
-    showToast(`+${n} страниц добавлено!`);
+    showToast(`+${n} pages added!`);
   }
 }
 
@@ -257,7 +259,7 @@ function markDone() {
   if (u.history[k] < GOAL) u.history[k] = GOAL;
   saveDB();
   render();
-  showToast('Отличная работа! 🔥');
+  showToast('Great job! 🔥');
 }
 
 function saveBook() {
@@ -267,7 +269,7 @@ function saveBook() {
   db.users[currentUser].book = { title, total };
   saveDB();
   renderBook();
-  showToast('Книга сохранена!');
+  showToast('Book saved!');
 }
 
 // ── Rival modal ──
@@ -289,7 +291,7 @@ function renderUserList(q) {
   const list = document.getElementById('user-list');
   const others = Object.keys(db.users).filter(n => n !== currentUser && (!q || n.toLowerCase().includes(q)));
   if (!others.length) {
-    list.innerHTML = '<div class="empty-state">Нет других пользователей</div>';
+    list.innerHTML = '<div class="empty-state">No other users yet</div>';
     return;
   }
   list.innerHTML = others.map(name => {
@@ -302,7 +304,7 @@ function renderUserList(q) {
         <div class="user-item-avatar">${initials(name)}</div>
         <div>
           <div class="user-item-name">${name} ${isSelected ? '✓' : ''}</div>
-          <div class="user-item-meta">${streak} 🔥 серия · ${total} стр</div>
+          <div class="user-item-meta">${streak} 🔥 streak · ${total} pages</div>
         </div>
       </div>`;
   }).join('');
@@ -314,10 +316,10 @@ function selectRival(name) {
   saveDB();
   closeRivalModal();
   render();
-  showToast(`${name} — твой новый соперник!`);
+  showToast(`${name} is your new rival!`);
 }
 
-// ── Auto-refresh (каждые 30 сек подтягивает данные соперника) ──
+// ── Auto-refresh (pull rival data every 30s) ──
 setInterval(async () => {
   if (!currentUser) return;
   const savedBook = JSON.stringify(db.users[currentUser]?.book);
@@ -343,7 +345,7 @@ setInterval(async () => {
   }
 })();
 
-// Закрыть модалку по клику на оверлей
+// Close modal on overlay click
 document.getElementById('rival-modal').addEventListener('click', function(e) {
   if (e.target === this) closeRivalModal();
 });
