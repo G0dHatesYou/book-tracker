@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BookStreak — читаем вместе</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  Загрузка...
+</div>
+
+<!-- LOGIN -->
+<div class="app" id="login-screen" style="display:none">
+  <div class="login-book">📚</div>
+  <div class="login-title">BookStreak</div>
+  <div class="login-sub">Читай каждый день. Соревнуйся с другом.</div>
+  <div class="login-card">
+    <label for="name-input">Твоё имя</label>
+    <input id="name-input" class="input" type="text" placeholder="Например, Алексей" maxlength="30" autocomplete="off" />
+    <button class="btn-primary" id="login-btn" onclick="handleLogin()">Войти / Зарегистрироваться</button>
+    <div class="login-hint">Пароль не нужен — просто введи имя</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="app" id="main-screen" style="display:none">
+
+  <header class="site-header">
+    <div class="logo">Book<span>Streak</span></div>
+    <div class="header-user">
+      <div class="avatar-sm" id="header-avatar"></div>
+      <span class="username-display" id="header-name"></span>
+      <button class="btn-link" onclick="logout()">Выйти</button>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <div class="section-label">Обзор</div>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">Моя серия</div>
+      <div class="stat-value" id="stat-my-streak">0 🔥</div>
+      <div class="stat-sub">дней подряд</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Всего страниц</div>
+      <div class="stat-value" id="stat-total">0</div>
+      <div class="stat-sub">прочитано</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Сегодня</div>
+      <div class="stat-value" id="stat-today">⏳</div>
+      <div class="stat-sub" id="stat-today-sub">цель открыта</div>
+    </div>
+  </div>
+
+  <!-- My progress -->
+  <div class="my-section">
+    <div class="section-label">Мой прогресс сегодня</div>
+    <div class="my-card">
+      <div class="my-header">
+        <div class="my-avatar" id="my-avatar"></div>
+        <div>
+          <div class="my-name" id="my-name"></div>
+          <div class="my-streak" id="my-streak-label"></div>
+        </div>
+      </div>
+      <div class="pages-row">
+        <span class="pages-lbl">Страниц прочитано</span>
+        <span class="pages-val"><span id="my-pages">0</span> / 10</span>
+      </div>
+      <div class="my-prog-bar">
+        <div class="my-prog-fill" id="my-prog" style="width:0%"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-sm" onclick="addPages(-10)">− 10</button>
+        <button class="btn-sm" onclick="addPages(10)">+ 10</button>
+        <button class="btn-sm" onclick="addCustomPages()">+ своё</button>
+        <button class="btn-sm btn-done" id="done-btn" onclick="markDone()">✓ Отметить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rival -->
+  <div class="rival-section">
+    <div class="section-label">Соперник</div>
+    <div class="rival-card" id="rival-card">
+      <div class="rival-avatar" id="rival-avatar">?</div>
+      <div class="rival-info" id="rival-info">
+        <div class="no-rival-placeholder">Соперник не выбран</div>
+      </div>
+      <button class="btn-choose" onclick="openRivalModal()">Выбрать</button>
+    </div>
+  </div>
+
+  <!-- Book -->
+  <div class="book-section">
+    <div class="section-label">Текущая книга</div>
+    <div class="book-card">
+      <div class="book-display">
+        <div class="book-icon">📖</div>
+        <div>
+          <div class="book-title" id="book-title">Книга не указана</div>
+          <div class="book-meta" id="book-meta">—</div>
+        </div>
+      </div>
+      <div class="book-form">
+        <input id="book-name-input" class="input" placeholder="Название книги" />
+        <input id="book-pages-input" class="input" type="number" placeholder="Страниц всего" style="max-width:140px" />
+        <button class="btn-save" onclick="saveBook()">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Heatmap -->
+  <div class="heatmap-section">
+    <div class="section-label">Последние 28 дней</div>
+    <div class="heatmap-legend">
+      <span class="legend-item"><span class="legend-dot" style="background:var(--both)"></span>Оба выполнили</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--one)"></span>Один выполнил</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--danger)"></span>Пропуск</span>
+    </div>
+    <div class="day-labels">
+      <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+    </div>
+    <div class="heatmap-grid" id="heatmap"></div>
+  </div>
+
+</div>
+
+<!-- RIVAL MODAL -->
+<div class="modal-overlay" id="rival-modal">
+  <div class="modal">
+    <div class="modal-title">Выбрать соперника</div>
+    <div class="modal-search">
+      <input class="input" id="rival-search" placeholder="Поиск по имени..." oninput="filterUsers()" />
+    </div>
+    <div class="user-list" id="user-list"></div>
+    <button class="modal-cancel" onclick="closeRivalModal()">Отмена</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
